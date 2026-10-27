@@ -10,7 +10,6 @@ import {
   CartesianGrid,
 } from 'recharts';
 import { HorizonMetrics } from '../types';
-import { Hourglass } from 'lucide-react';
 
 interface HorizonErrorChartProps {
   horizonData: HorizonMetrics[];
@@ -18,50 +17,43 @@ interface HorizonErrorChartProps {
 
 export const HorizonErrorChart: React.FC<HorizonErrorChartProps> = ({ horizonData }) => {
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Hourglass className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-white">
-            Forecast Error vs Lead Time Horizon
-          </h2>
-        </div>
-        <p className="text-xs text-slate-400 mb-4">
-          Accuracy progression across lead time horizons (Hours between publishTime and delivery startTime).
-        </p>
+    <div className="w-full">
+      <div className="mb-2 text-xs text-desk-textMuted">
+        Error vs lead time horizon (hours between forecast publish time and delivery start).
       </div>
 
-      <div className="w-full h-[260px]">
+      <div className="w-full h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={horizonData} margin={{ top: 10, right: 10, left: -10, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#E3EADD" vertical={false} />
             <XAxis
               dataKey="horizonBin"
-              stroke="#64748b"
-              tick={{ fontSize: 10 }}
+              stroke="#5E7366"
+              tick={{ fontSize: 10, fill: '#5E7366' }}
               tickMargin={6}
             />
             <YAxis
-              stroke="#64748b"
-              tick={{ fontSize: 10 }}
+              stroke="#5E7366"
+              tick={{ fontSize: 10, fill: '#5E7366' }}
               tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
               unit=" MW"
             />
             <Tooltip
               formatter={(value: any, name: any) => [`${Math.round(value).toLocaleString()} MW`, name]}
               contentStyle={{
-                backgroundColor: '#0f172a',
-                borderColor: '#334155',
-                borderRadius: '0.75rem',
+                backgroundColor: '#FFFFFF',
+                borderColor: '#DCE5D5',
+                borderRadius: '0.5rem',
                 fontSize: '11px',
+                color: '#1F3A2B',
               }}
             />
             <Legend
-              wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+              wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }}
               iconType="circle"
             />
-            <Bar dataKey="mae" fill="#38bdf8" fillOpacity={0.8} name="MAE (MW)" radius={[3, 3, 0, 0]} />
-            <Bar dataKey="rmse" fill="#f43f5e" fillOpacity={0.7} name="RMSE (MW)" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="mae" fill="#6FAF7A" fillOpacity={0.85} name="MAE (MW)" radius={[3, 3, 0, 0]} />
+            <Bar dataKey="rmse" fill="#B7791F" fillOpacity={0.7} name="RMSE (MW)" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

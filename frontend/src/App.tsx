@@ -12,6 +12,8 @@ import { fetchDayAheadForecasts, fetchMetricsBreakdown } from './services/api';
 import { DayAheadResponse, MetricsBreakdownResponse } from './types';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 
+type AnalyticsTab = 'hourly' | 'horizon' | 'distribution';
+
 export const App: React.FC = () => {
   const [cutoffHour, setCutoffHour] = useState<number>(9);
   const [cutoffMinute, setCutoffMinute] = useState<number>(50);
@@ -19,6 +21,7 @@ export const App: React.FC = () => {
   const [endDate, setEndDate] = useState<string>('2026-01-31');
   const [showAdjustedForecast, setShowAdjustedForecast] = useState<boolean>(false);
   const [showComparisonTable, setShowComparisonTable] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<AnalyticsTab>('hourly');
 
   const [forecastData, setForecastData] = useState<DayAheadResponse | null>(null);
   const [breakdownData, setBreakdownData] = useState<MetricsBreakdownResponse | null>(null);
@@ -36,7 +39,7 @@ export const App: React.FC = () => {
       setForecastData(fcRes);
       setBreakdownData(bdRes);
     } catch (err: any) {
-      setError(err.message || 'Failed to communicate with GridBricks backend API.');
+      setError(err.message || 'Failed to communicate with GridBricks API.');
     } finally {
       setIsLoading(false);
     }
@@ -57,10 +60,10 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-desk-bg text-desk-text flex flex-col font-sans">
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-5">
         {/* Controls Section */}
         <Controls
           cutoffHour={cutoffHour}
@@ -76,43 +79,46 @@ export const App: React.FC = () => {
           isLoading={isLoading}
         />
 
-        {/* Loading Spinner */}
+        {/* Loading State */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center p-16 text-slate-400">
-            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin mb-3" />
-            <p className="text-sm font-medium">Evaluating Elexon BMRS January 2026 delivery hours...</p>
+          <div className="flex flex-col items-center justify-center py-20 text-desk-textMuted">
+            <Loader2 className="w-7 h-7 text-desk-primary animate-spin mb-2" />
+            <p className="text-xs font-medium">Evaluating January 2026 delivery hours...</p>
           </div>
         )}
 
         {/* Error Alert */}
         {error && !isLoading && (
-          <div className="p-4 mb-6 bg-red-950/40 border border-red-500/50 rounded-2xl flex items-center justify-between text-red-200">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <span className="text-sm">{error}</span>
+          <div className="p-3.5 mb-5 bg-desk-amberBg border border-desk-amberBorder rounded-xl flex items-center justify-between text-desk-amber text-xs">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
             </div>
             <button
               onClick={loadData}
-              className="px-3 py-1.5 rounded-lg bg-red-800/60 hover:bg-red-700 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="px-2.5 py-1 rounded bg-desk-card border border-desk-amberBorder hover:bg-desk-amberBg text-xs font-medium flex items-center gap-1 transition-colors"
             >
-              <RefreshCw className="w-3.5 h-3.5" /> Retry
+              <RefreshCw className="w-3 h-3" /> Retry
             </button>
           </div>
         )}
 
-        {/* Main Dashboard Content */}
+        {/* Main Content */}
         {!isLoading && !error && forecastData && breakdownData && (
           <>
-            {/* KPI Metrics */}
+            {/* 1. KPI Metric Cards (4 default, toggle for more) */}
             <MetricCards
               metrics={forecastData.metricsSummary}
               showAdjusted={showAdjustedForecast}
             />
 
-            {/* Trading Guidance Insight */}
-            <TraderInsight summary={forecastData.traderSummary} />
+            {/* 2. Concise Trader Guidance */}
+            <TraderInsight
+              summary={forecastData.traderSummary}
+              metrics={forecastData.metricsSummary}
+            />
 
-            {/* Optional Cutoff Comparison Table */}
+            {/* 3. Cutoff Comparison Table (Behind toggle) */}
             {showComparisonTable && forecastData.cutoffComparisons && (
               <CutoffComparisonTable
                 comparisons={forecastData.cutoffComparisons}
@@ -122,27 +128,89 @@ export const App: React.FC = () => {
               />
             )}
 
-            {/* Time-Series Chart */}
+            {/* 4. Main Time-Series Chart (Large) */}
             <TimeSeriesChart
               data={forecastData.dataPoints}
               showAdjusted={showAdjustedForecast}
             />
 
-            {/* Multi-chart Error Analytics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ErrorDistributionChart distribution={breakdownData.errorDistribution} />
-              <HourlyErrorChart hourlyData={breakdownData.hourlyBreakdown} />
-              <HorizonErrorChart horizonData={breakdownData.horizonBreakdown} />
+            {/* 5. Secondary Analytics in Tabs (One visible at a time) */}
+            <div className="bg-desk-card border border-desk-border rounded-xl p-4 sm:p-5 mb-5 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-desk-borderLight pb-3 mb-4 gap-2">
+                <h3 className="text-xs sm:text-sm font-semibold text-desk-text">
+                  Error Breakdown Analysis
+                </h3>
+                {/* Tabs */}
+                <div className="inline-flex rounded-lg border border-desk-border p-0.5 bg-desk-cardAlt self-start sm:self-auto text-xs">
+                  <button
+                    onClick={() => setActiveTab('hourly')}
+                    className={`px-3 py-1 rounded-md transition-colors ${
+                      activeTab === 'hourly'
+                        ? 'bg-desk-tint text-desk-text font-semibold shadow-xs'
+                        : 'text-desk-textMuted hover:text-desk-text'
+                    }`}
+                  >
+                    By hour of day
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('horizon')}
+                    className={`px-3 py-1 rounded-md transition-colors ${
+                      activeTab === 'horizon'
+                        ? 'bg-desk-tint text-desk-text font-semibold shadow-xs'
+                        : 'text-desk-textMuted hover:text-desk-text'
+                    }`}
+                  >
+                    Vs lead time horizon
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('distribution')}
+                    className={`px-3 py-1 rounded-md transition-colors ${
+                      activeTab === 'distribution'
+                        ? 'bg-desk-tint text-desk-text font-semibold shadow-xs'
+                        : 'text-desk-textMuted hover:text-desk-text'
+                    }`}
+                  >
+                    Error distribution
+                  </button>
+                </div>
+              </div>
+
+              {activeTab === 'hourly' && (
+                <HourlyErrorChart hourlyData={breakdownData.hourlyBreakdown} />
+              )}
+              {activeTab === 'horizon' && (
+                <HorizonErrorChart horizonData={breakdownData.horizonBreakdown} />
+              )}
+              {activeTab === 'distribution' && (
+                <ErrorDistributionChart distribution={breakdownData.errorDistribution} />
+              )}
             </div>
           </>
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-6 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>GridBricks | UK Day-Ahead Power Procurement Evaluation</span>
-          <span>Data: Elexon BMRS FUELHH & WINDFOR only (Jan 2026) | Units: MW | Timezone: UTC</span>
+      {/* Clean Compact Footer */}
+      <footer className="border-t border-desk-border bg-desk-card py-3 px-6 text-center text-xs text-desk-textMuted">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-1.5">
+          <span>GridBricks Power Desk</span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span>Sources: Elexon BMRS (FUELHH, WINDFOR)</span>
+            <span>•</span>
+            <a
+              href="#assumptions"
+              onClick={(e) => {
+                e.preventDefault();
+                const el = document.getElementById('assumptions');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                else window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="underline hover:text-desk-text font-medium"
+            >
+              Assumptions & Sources
+            </a>
+            <span>•</span>
+            <span>UTC | MW</span>
+          </div>
         </div>
       </footer>
     </div>
