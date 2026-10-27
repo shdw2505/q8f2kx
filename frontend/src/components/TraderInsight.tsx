@@ -7,6 +7,14 @@ interface TraderInsightProps {
 }
 
 export const TraderInsight: React.FC<TraderInsightProps> = ({ summary, metrics }) => {
+  if (!metrics || metrics.count === 0) {
+    return (
+      <div className="bg-desk-card border border-desk-border rounded-xl p-4 mb-5 text-xs text-desk-textMuted">
+        No data
+      </div>
+    );
+  }
+
   const biasFormatted = Math.round(metrics.bias).toLocaleString();
   const biasSign = metrics.bias > 0 ? '+' : '';
   const wapeFormatted = metrics.wape.toFixed(1);
@@ -19,7 +27,7 @@ export const TraderInsight: React.FC<TraderInsightProps> = ({ summary, metrics }
       </div>
 
       <div className="text-desk-textMuted mt-1">
-        {summary.peakHourRisk || '16-20 UTC: average MAE is 2,006 MW (WAPE 16.7%) with an average bias of +1,476 MW.'}
+        {summary.peakHourRisk || 'No data'}
       </div>
 
       <div className="mt-2.5 pt-2 border-t border-desk-borderLight text-[11px] text-desk-textSubtle">
