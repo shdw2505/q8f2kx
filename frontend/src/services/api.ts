@@ -4,8 +4,8 @@ import { DayAheadResponse, MetricsBreakdownResponse } from '../types';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export async function fetchDayAheadForecasts(
-  cutoffHour: number = 11,
-  cutoffMinute: number = 0,
+  cutoffHour: number = 9,
+  cutoffMinute: number = 50,
   startDate?: string,
   endDate?: string,
   forceRefresh: boolean = false
@@ -26,8 +26,8 @@ export async function fetchDayAheadForecasts(
 }
 
 export async function fetchMetricsBreakdown(
-  cutoffHour: number = 11,
-  cutoffMinute: number = 0,
+  cutoffHour: number = 9,
+  cutoffMinute: number = 50,
   startDate?: string,
   endDate?: string
 ): Promise<MetricsBreakdownResponse> {

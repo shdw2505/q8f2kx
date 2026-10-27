@@ -5,7 +5,7 @@ A single-service web application built for a UK energy utility's day-ahead power
 ---
 
 ## Live Demo & Repository
-- Deployed Application: [TBD - deployment URL after Task 8]
+- Deployed Application: [TBD - https://<project-name>.vercel.app]
 - Source Repository: [TBD - GitHub repository URL]
 
 ---
@@ -24,6 +24,8 @@ A single-service web application built for a UK energy utility's day-ahead power
 
 ## Quick Start: Local Run
 
+> **Note on Docker**: Docker and docker-compose are maintained for local single-container execution and automated GitHub Actions CI builds. Production deployment runs on Vercel's free serverless architecture.
+
 ### Option A: Local Docker (Recommended)
 Run the single unified container (builds React frontend and serves via FastAPI):
 ```bash
@@ -32,14 +34,14 @@ docker compose up --build
 Open `http://localhost:8000` in your browser.
 
 ### Option B: Local Run Without Docker as a Single Service
-Build the frontend once, then run FastAPI to serve both the API and the static frontend from port 8000:
+Build the frontend once, then run FastAPI from `backend/` to serve both the API and the static frontend from port 8000:
 ```bash
 # 1. Build the frontend production bundle
 cd frontend
 npm install
 npm run build
 
-# 2. Start the unified FastAPI backend
+# 2. Start the unified FastAPI backend from the backend directory
 cd ../backend
 python -m venv .venv
 # Linux/macOS:
@@ -85,6 +87,8 @@ PYTHONPATH=backend pytest backend/tests -v
 $env:PYTHONPATH="backend"; pytest backend/tests -v
 ```
 
+> **Testing Verification Note**: `vercel dev` was not run locally (the Vercel CLI was not pre-installed in the development environment). Local verification was performed by running the unified FastAPI server against the built static assets, executing the 15-test automated pytest suite, and verifying programmatic ASGI route resolution.
+
 ---
 
 ## Repository Structure
@@ -93,17 +97,21 @@ $env:PYTHONPATH="backend"; pytest backend/tests -v
 .
 ├── .dockerignore                            # Excludes venv, node_modules, tests, and caches from Docker context
 ├── .gitignore                               # Ignores Python bytecode, venv, node_modules, build outputs, and docx
+├── .vercelignore                            # Excludes dev venv, node_modules, tests, and docs from Vercel deployment
+├── vercel.json                              # Vercel deployment config (Edge static hosting + serverless function)
 ├── Dockerfile                               # Multi-stage build: Node 20 (React build) + Python 3.11-slim (FastAPI runtime)
 ├── docker-compose.yml                       # Single-service container configuration mapping port 8000:8000
-├── heroku.yml                               # Heroku container deployment manifest
 ├── validate_pipeline.py                     # Diagnostic script verifying data joins, timestamps, and bias across Jan 2026
 ├── .github/
 │   └── workflows/
 │       └── docker-build.yml                 # GitHub Actions CI running pytest and verifying Docker build
 ├── docs/
 │   └── ARCHITECTURE.md                      # Technical reference, auction gate citations, alignment math, and video script
+├── api/
+│   ├── index.py                             # Vercel serverless Python entrypoint exposing FastAPI with pre-warming
+│   └── requirements.txt                     # Lean serverless runtime dependencies (fastapi, pydantic, numpy, requests)
 ├── backend/
-│   ├── requirements.txt                     # Backend dependencies (fastapi, uvicorn, pydantic, numpy, requests, pytest)
+│   ├── requirements.txt                     # Full backend dependencies (fastapi, uvicorn, pydantic, numpy, requests, pytest)
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── config.py                        # Settings: 09:50 UTC default cutoff, snapshot paths, MAPE floor
@@ -144,7 +152,7 @@ $env:PYTHONPATH="backend"; pytest backend/tests -v
         ├── types/
         │   └── index.ts                     # TypeScript interfaces matching backend Pydantic schemas
         ├── services/
-        │   └── api.ts                       # API fetch wrapper for backend endpoints
+        │   └── api.ts                       # API fetch wrapper for backend endpoints (relative /api/v1 paths)
         └── components/
             ├── Header.tsx                   # Top navigation bar and status indicators
             ├── Controls.tsx                 # Auction gate cutoff selector, date range filters, and feature toggles
@@ -252,13 +260,18 @@ An optional toggle applies a backward-looking 7-day rolling offset strictly usin
 
 ---
 
-## Deployment Steps (Heroku 1-Service Deployment)
+## Deployment Steps (Vercel Free Hobby Plan)
 
-Deploy as a single unified container using `heroku.yml`:
-1. Log in: `heroku login`
-2. Create an app: `heroku create <app-name> --stack container`
-3. Deploy: `git push heroku main`
-4. The container starts Uvicorn bound to `$PORT` (defaulting to 8000 locally).
+The application deploys to Vercel as a single project combining Edge static asset hosting (React SPA) and a Python serverless function (FastAPI API):
+
+1. Push the repository to a public GitHub repo.
+2. Log in to [Vercel](https://vercel.com) and click **Add New Project**.
+3. Import your GitHub repository.
+4. Configure Project Settings:
+   - **Framework Preset**: Select **Other**.
+   - **Root Directory**: `./` (repository root).
+   - Build command and output directory are automatically read from `vercel.json`.
+5. Click **Deploy**. Vercel will provision the application at `https://<project-name>.vercel.app`.
 
 ---
 

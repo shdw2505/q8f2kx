@@ -4,7 +4,7 @@ Serves API endpoints and optionally serves the built React frontend static asset
 """
 
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -29,7 +29,7 @@ app.add_middleware(
 # Include API routes
 app.include_router(api_router)
 
-# Mount frontend static distribution if built (for unified single-service Docker / Heroku deploy)
+# Mount frontend static distribution if built (for unified single-service Docker / local run)
 FRONTEND_DIST = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist")
 )
@@ -45,7 +45,7 @@ if os.path.exists(FRONTEND_DIST):
     async def serve_spa(full_path: str):
         # Don't hijack /api
         if full_path.startswith("api"):
-            return None
+            raise HTTPException(status_code=404, detail="API endpoint not found")
         file_path = os.path.join(FRONTEND_DIST, full_path)
         if os.path.isfile(file_path):
             return FileResponse(file_path)

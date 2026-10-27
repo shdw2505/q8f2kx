@@ -40,7 +40,14 @@ def get_cutoff_label(hour: int, minute: int) -> str:
     return f"{hour:02d}:{minute:02d} UTC on D-1"
 
 
+_cutoff_comparisons_cache: Optional[List[CutoffComparisonItem]] = None
+
+
 def compute_cutoff_comparisons() -> List[CutoffComparisonItem]:
+    global _cutoff_comparisons_cache
+    if _cutoff_comparisons_cache is not None:
+        return _cutoff_comparisons_cache
+
     actuals = elexon_client.get_fuelhh_actuals()
     forecasts = elexon_client.get_windfor_forecasts()
     comparisons: List[CutoffComparisonItem] = []
@@ -63,6 +70,7 @@ def compute_cutoff_comparisons() -> List[CutoffComparisonItem]:
                 isAssumedDefault=(h == 9 and m == 50),
             )
         )
+    _cutoff_comparisons_cache = comparisons
     return comparisons
 
 

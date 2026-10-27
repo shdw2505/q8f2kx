@@ -47,6 +47,13 @@ def get_horizon_bin(horizon_hours: float) -> str:
 
 
 class ForecastEngine:
+    def __init__(self):
+        self._cache: Dict[Tuple, List[AlignedDataPoint]] = {}
+
+    def clear_cache(self):
+        """Clears in-memory computed alignment cache."""
+        self._cache.clear()
+
     def aggregate_fuelhh_to_hourly(self, records: List[FuelHHRecord]) -> Dict[str, dict]:
         """
         Aggregates half-hourly FUELHH records (:00 and :30) to hourly blocks (:00).
@@ -192,7 +199,12 @@ class ForecastEngine:
         Combines hourly actuals with cutoff-selected forecasts, computes errors,
         derives horizon-dependent P50 and P90 uncertainty bounds, and adds
         strictly backward-looking rolling bias-adjusted forecasts using completed days [D-8, D-2].
+        Results are cached in memory so subsequent requests with identical parameters return in < 1ms.
         """
+        cache_key = (cutoff_hour, cutoff_minute, filter_start_date, filter_end_date)
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
         hourly_actuals = self.aggregate_fuelhh_to_hourly(fuelhh_records)
         selected_forecasts = self.select_day_ahead_forecasts(
             windfor_records, cutoff_hour, cutoff_minute
@@ -303,6 +315,7 @@ class ForecastEngine:
             )
 
         aligned_points.sort(key=lambda x: x.startTime)
+        self._cache[cache_key] = aligned_points
         return aligned_points
 
 

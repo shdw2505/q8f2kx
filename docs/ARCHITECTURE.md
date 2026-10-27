@@ -51,7 +51,7 @@ The system is architected as a **unified, single-service deployment**:
 
 ### Key Technical Decisions:
 1. **Unified Container Image**:
-   A multi-stage `Dockerfile` compiles the React frontend into static assets in Stage 1 (`node:20-alpine`) and copies them into Stage 2 (`python:3.11-slim`). FastAPI serves both the REST API and the React SPA from port 8000 (or `$PORT` on Heroku).
+   A multi-stage `Dockerfile` compiles the React frontend into static assets in Stage 1 (`node:20-alpine`) and copies them into Stage 2 (`python:3.11-slim`). FastAPI serves both the REST API and the React SPA from port 8000 (or dynamic `$PORT` in container environments).
 2. **Committed Snapshot Data Source**:
    All 1,488 actuals and 22,192 forecasts for January 2026 are committed as JSON snapshots in `backend/app/data/`. The app starts sub-second and functions 100% offline without network dependencies. Live refreshing from the Elexon BMRS API remains available via `backend/app/services/fetch_snapshot.py` or `force_refresh=true`.
 3. **Strict Typings & Test Coverage**:
@@ -215,35 +215,31 @@ Use this structure when recording your walkthrough video:
 
 ## 7. Deployment Instructions
 
-### Option A: Heroku (Recommended 1-Service Deployment)
-1. Install Heroku CLI and login:
-   ```bash
-   heroku login
-   ```
-2. Create an app with container stack:
-   ```bash
-   heroku create <your-anonymous-app-name>
-   heroku stack:set container
-   ```
-3. Push and release using `heroku.yml`:
-   ```bash
-   git push heroku main
-   ```
-4. Open the deployed application:
-   ```bash
-   heroku open
-   ```
+### Option A: Vercel (Free Hobby Plan - Production)
+Deploy to Vercel with zero infrastructure cost:
+1. Connect the public GitHub repository in the Vercel dashboard.
+2. Vercel automatically detects `vercel.json`:
+   - Builds the React frontend (`frontend/dist`) as static assets served globally via edge CDN.
+   - Packages `api/index.py` as a serverless Python function exposing FastAPI under `/api/v1/*`.
+   - Bundles `backend/**` (including snapshot JSON files) via `includeFiles`.
+3. Build Settings in Vercel:
+   - Framework Preset: **Other**
+   - Root Directory: `.` (repository root)
+   - Build Command: `cd frontend && npm install && npm run build` (handled by `vercel.json`)
+   - Output Directory: `frontend/dist` (handled by `vercel.json`)
+4. Click **Deploy**. The app is live on `https://<project-name>.vercel.app`.
 
-### Option B: Local Docker
-Run the unified single-service container:
+### Option B: Local Docker & CI (Container Orchestration)
+Docker is retained for local single-container execution and automated GitHub Actions verification:
 ```bash
 docker compose up --build
 ```
 Navigate to `http://localhost:8000`.
 
-### Option C: Vercel (Frontend) + Backend
-If deploying frontend to Vercel separately:
-1. Push repo to GitHub.
-2. Import project in Vercel with Root Directory set to `frontend`.
-3. Set environment variable: `VITE_API_BASE_URL=https://<your-backend-host>`.
-4. Deploy.
+### Option C: Local Single Service (Without Docker)
+Build the frontend bundle and run FastAPI locally:
+```bash
+cd frontend && npm install && npm run build
+cd ../backend && uvicorn app.main:app --port 8000
+```
+Navigate to `http://localhost:8000`.
