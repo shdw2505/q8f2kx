@@ -200,12 +200,15 @@ class MetricsEngine:
         # 2. Peak hour analysis (16:00 to 20:00 UTC)
         peak_hours = [h for h in hourly if 16 <= h.hour <= 20]
         if peak_hours:
-            peak_mae = float(np.mean([h.mae for h in peak_hours]))
-            peak_bias = float(np.mean([h.bias for h in peak_hours]))
-            peak_wape = float(np.mean([h.wape for h in peak_hours]))
+            sum_abs_err = sum(h.mae * h.count for h in peak_hours)
+            sum_act = sum(h.avgActual * h.count for h in peak_hours)
+            total_count = sum(h.count for h in peak_hours)
+            peak_mae = sum_abs_err / total_count if total_count > 0 else 0.0
+            peak_bias = sum(h.bias * h.count for h in peak_hours) / total_count if total_count > 0 else 0.0
+            peak_wape = (sum_abs_err / sum_act * 100.0) if sum_act > 0 else 0.0
             peak_desc = (
-                f"Peak demand hours (16-20 UTC) exhibit an average MAE of {peak_mae:,.0f} MW "
-                f"(WAPE {peak_wape:.1f}%) and an average bias of {peak_bias:+,.0f} MW."
+                f"16-20 UTC: average MAE is {peak_mae:,.0f} MW "
+                f"(WAPE {peak_wape:.1f}%) with an average bias of {peak_bias:+,.0f} MW."
             )
         else:
             peak_desc = "Diurnal variation consistent across trading periods."
