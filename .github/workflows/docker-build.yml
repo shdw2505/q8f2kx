@@ -1,0 +1,60 @@
+name: Test & Docker Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Backend Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run pytest suite
+        env:
+          PYTHONPATH: backend
+        run: |
+          pytest backend/tests -v
+
+  docker-build:
+    name: Build & Verify Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: gridbricks-app:latest
+          load: true
+
+      - name: Test Docker Container Run & Health
+        run: |
+          docker run -d --name app-test -p 8000:8000 -e PORT=8000 gridbricks-app:latest
+          sleep 5
+          docker ps
+          curl --fail --retry 5 --retry-delay 2 http://localhost:8000/api/v1/health || exit 1
+          docker stop app-test
