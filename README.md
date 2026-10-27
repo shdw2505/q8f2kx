@@ -5,8 +5,8 @@ A single-service web application built for a UK energy utility's day-ahead power
 ---
 
 ## Live Demo & Repository
-- Deployed Application: [TBD - https://<project-name>.vercel.app]
-- Source Repository: [TBD - GitHub repository URL]
+- Deployed Application: https://q8f2kx.vercel.app/
+- Source Repository: https://github.com/shdw2505/q8f2kx
 
 ---
 
